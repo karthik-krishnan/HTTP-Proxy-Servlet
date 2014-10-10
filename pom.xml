@@ -9,7 +9,7 @@
 
   <groupId>org.mitre.dsmiley.httpproxy</groupId>
   <artifactId>smiley-http-proxy-servlet</artifactId>
-  <version>1.6-SNAPSHOT</version>
+  <version>9.1.6-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>Smiley's HTTP Proxy Servlet</name>
@@ -157,6 +157,24 @@
         </plugins>
       </build>
     </profile>
-  </profiles>
+
+      <profile>
+          <id>deployer</id>
+          <distributionManagement>
+              <repository>
+                  <id>releases</id>
+                  <name>Releases</name>
+                  <url>http://10.173.38.14/nexus/content/repositories/releases</url>
+                  <!--<url>http://209.34.73.243/nexus/content/repositories/b2b-releases</url>-->
+              </repository>
+              <snapshotRepository>
+                  <id>snapshots</id>
+                  <name>Snapshots</name>
+                  <url>http://10.173.38.14/nexus/content/repositories/b2b-snapshots</url>
+                  <!--<url>http://209.34.73.243/nexus/content/repositories/b2b-snapshots</url>-->
+              </snapshotRepository>
+          </distributionManagement>
+          </profile>
+    </profiles>
   
 </project>
