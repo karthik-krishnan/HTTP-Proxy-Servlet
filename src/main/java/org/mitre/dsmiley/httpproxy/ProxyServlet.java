@@ -51,6 +51,8 @@ import java.util.BitSet;
 import java.util.Enumeration;
 import java.util.Formatter;
 
+import static java.lang.String.format;
+
 /**
  * An HTTP reverse proxy/gateway servlet. It is designed to be extended for customization
  * if desired. Most of the work is handled by
@@ -78,6 +80,7 @@ public class ProxyServlet extends HttpServlet {
 
   /** The parameter name for the target (destination) URI to proxy to. */
   protected static final String P_TARGET_URI = "targetUri";
+  protected static final String P_TARGET_URI_PROPERTY = "targetUriProperty";
   protected static final String ATTR_TARGET_URI =
           ProxyServlet.class.getSimpleName() + ".targetUri";
   protected static final String ATTR_TARGET_HOST =
@@ -94,6 +97,7 @@ public class ProxyServlet extends HttpServlet {
   // ATTR_* parameters.
   /** From the configured parameter "targetUri". */
   protected String targetUri;
+  protected String targetUriProperty;
   protected URI targetUriObj;//new URI(targetUri)
   protected HttpHost targetHost;//URIUtils.extractHost(targetUriObj);
 
@@ -142,8 +146,14 @@ public class ProxyServlet extends HttpServlet {
 
   protected void initTarget() throws ServletException {
     targetUri = getConfigParam(P_TARGET_URI);
-    if (targetUri == null)
-      throw new ServletException(P_TARGET_URI+" is required.");
+    targetUriProperty = getConfigParam(P_TARGET_URI_PROPERTY);
+    if (targetUri == null && targetUriProperty == null)
+      throw new ServletException(format("%s or %s is required", P_TARGET_URI, P_TARGET_URI_PROPERTY));
+    if(targetUriProperty != null)
+      targetUri = System.getProperty(targetUriProperty);
+    if(targetUri == null)
+      throw new ServletException(P_TARGET_URI + " is required.");
+    
     //test it's valid
     try {
       targetUriObj = new URI(targetUri);
