@@ -50,6 +50,7 @@ import java.net.URI;
 import java.util.BitSet;
 import java.util.Enumeration;
 import java.util.Formatter;
+import java.util.Properties;
 
 import static java.lang.String.format;
 
@@ -145,15 +146,24 @@ public class ProxyServlet extends HttpServlet {
   }
 
   protected void initTarget() throws ServletException {
+    Properties proxyProperties = new Properties();
+    try {
+      proxyProperties.load(getClass().getClassLoader().getResourceAsStream("proxy.properties"));
+    } catch (IOException e) {
+        throw new ServletException("Unable to load proxy.properties " + e, e);
+    }
     targetUri = getConfigParam(P_TARGET_URI);
     targetUriProperty = getConfigParam(P_TARGET_URI_PROPERTY);
     if (targetUri == null && targetUriProperty == null)
       throw new ServletException(format("%s or %s is required", P_TARGET_URI, P_TARGET_URI_PROPERTY));
-    if(targetUriProperty != null)
-      targetUri = System.getProperty(targetUriProperty);
+    if(targetUriProperty != null) {
+      targetUri = proxyProperties.getProperty(targetUriProperty);
+      if(targetUri == null)
+        targetUri = System.getProperty(targetUriProperty);
+    }
     if(targetUri == null)
       throw new ServletException(P_TARGET_URI + " is required.");
-    
+
     //test it's valid
     try {
       targetUriObj = new URI(targetUri);
