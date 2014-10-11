@@ -148,9 +148,9 @@ public class ProxyServlet extends HttpServlet {
   protected void initTarget() throws ServletException {
     Properties proxyProperties = new Properties();
     try {
-      proxyProperties.load(getClass().getClassLoader().getResourceAsStream("proxy.properties"));
+      proxyProperties.load(Thread.currentThread().getContextClassLoader().getResourceAsStream("http_proxy.properties"));
     } catch (IOException e) {
-        throw new ServletException("Unable to load proxy.properties " + e, e);
+        throw new ServletException("Unable to load http_proxy.properties " + e, e);
     }
     targetUri = getConfigParam(P_TARGET_URI);
     targetUriProperty = getConfigParam(P_TARGET_URI_PROPERTY);
