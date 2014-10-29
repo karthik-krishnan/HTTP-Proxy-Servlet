@@ -44,6 +44,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.net.URI;
@@ -146,12 +147,7 @@ public class ProxyServlet extends HttpServlet {
   }
 
   protected void initTarget() throws ServletException {
-    Properties proxyProperties = new Properties();
-    try {
-      proxyProperties.load(Thread.currentThread().getContextClassLoader().getResourceAsStream("http_proxy.properties"));
-    } catch (IOException e) {
-        throw new ServletException("Unable to load http_proxy.properties " + e, e);
-    }
+    Properties proxyProperties = getTargetUriProperties();
     targetUri = getConfigParam(P_TARGET_URI);
     targetUriProperty = getConfigParam(P_TARGET_URI_PROPERTY);
     if (targetUri == null && targetUriProperty == null)
@@ -171,6 +167,28 @@ public class ProxyServlet extends HttpServlet {
       throw new ServletException("Trying to process targetUri init parameter: "+e,e);
     }
     targetHost = URIUtils.extractHost(targetUriObj);
+  }
+
+  private Properties getTargetUriProperties() {
+    Properties proxyProperties = new Properties();
+    try {
+      InputStream proxyPropertiesResource = Thread.currentThread().getContextClassLoader().getResourceAsStream("http_proxy.properties");
+      if (proxyPropertiesResource != null)
+        proxyProperties.load(proxyPropertiesResource);
+    } catch (IOException e) {
+        //throw new ServletException("Unable to load http_proxy.properties " + e, e);
+      //Assume targetUriProperty approach of resolving the targetUri is not used.
+    }
+    Properties proxyOverrideProperties = new Properties();
+    try {
+      InputStream proxyOverridePropertiesResource = Thread.currentThread().getContextClassLoader().getResourceAsStream("http_proxy_override.properties");
+      if(proxyOverridePropertiesResource != null)
+        proxyOverrideProperties.load(proxyOverridePropertiesResource);
+    } catch (IOException e) {
+      //Looks like there is no overrides, so dont shout!
+    }
+    proxyProperties.putAll(proxyOverrideProperties);
+    return proxyProperties;
   }
 
   /** Called from {@link #init(javax.servlet.ServletConfig)}. HttpClient offers many opportunities
