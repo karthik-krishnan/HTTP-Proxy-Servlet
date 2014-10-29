@@ -172,7 +172,7 @@ public class ProxyServlet extends HttpServlet {
   private Properties getTargetUriProperties() {
     Properties proxyProperties = new Properties();
     try {
-      InputStream proxyPropertiesResource = Thread.currentThread().getContextClassLoader().getResourceAsStream("http_proxy.properties");
+      InputStream proxyPropertiesResource = Thread.currentThread().getContextClassLoader().getResourceAsStream("http-proxy.properties");
       if (proxyPropertiesResource != null)
         proxyProperties.load(proxyPropertiesResource);
     } catch (IOException e) {
@@ -181,7 +181,7 @@ public class ProxyServlet extends HttpServlet {
     }
     Properties proxyOverrideProperties = new Properties();
     try {
-      InputStream proxyOverridePropertiesResource = Thread.currentThread().getContextClassLoader().getResourceAsStream("http_proxy_override.properties");
+      InputStream proxyOverridePropertiesResource = Thread.currentThread().getContextClassLoader().getResourceAsStream("http-proxy-override.properties");
       if(proxyOverridePropertiesResource != null)
         proxyOverrideProperties.load(proxyOverridePropertiesResource);
     } catch (IOException e) {
