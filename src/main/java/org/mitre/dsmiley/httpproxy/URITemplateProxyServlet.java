@@ -10,9 +10,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -55,32 +53,7 @@ public class URITemplateProxyServlet extends ProxyServlet {
   @Override
   protected void service(HttpServletRequest servletRequest, HttpServletResponse servletResponse)
           throws ServletException, IOException {
-
-    //First collect params
-    /*
-     * Do not use servletRequest.getParameter(arg) because that will
-     * typically read and consume the servlet InputStream (where our
-     * form data is stored for POST). We need the InputStream later on.
-     * So we'll parse the query string ourselves. A side benefit is
-     * we can keep the proxy parameters in the query string and not
-     * have to add them to a URL encoded form attachment.
-     */
-    String queryString = "?" + servletRequest.getQueryString();//no "?" but might have "#"
-    int hash = queryString.indexOf('#');
-    if (hash >= 0) {
-      queryString = queryString.substring(0, hash);
-    }
-    List<NameValuePair> pairs;
-    try {
-      //note: HttpClient 4.2 lets you parse the string without building the URI
-      pairs = URLEncodedUtils.parse(new URI(queryString), null);
-    } catch (URISyntaxException e) {
-      throw new ServletException("Unexpected URI parsing error on " + queryString, e);
-    }
-    LinkedHashMap<String, String> params = new LinkedHashMap<String, String>();
-    for (NameValuePair pair : pairs) {
-      params.put(pair.getName(), pair.getValue());
-    }
+    LinkedHashMap<String, String> params = resolveTemplateVariables(servletRequest);
 
     //Now rewrite the URL
     StringBuffer urlBuf = new StringBuffer();//note: StringBuilder isn't supported by Matcher
@@ -105,7 +78,7 @@ public class URITemplateProxyServlet extends ProxyServlet {
     servletRequest.setAttribute(ATTR_TARGET_HOST, URIUtils.extractHost(targetUriObj));
 
     //Determine the new query string based on removing the used names
-    StringBuilder newQueryBuf = new StringBuilder(queryString.length());
+    StringBuilder newQueryBuf = new StringBuilder(servletRequest.getQueryString().length());
     for (Map.Entry<String, String> nameVal : params.entrySet()) {
       if (newQueryBuf.length() > 0)
         newQueryBuf.append('&');
@@ -116,6 +89,58 @@ public class URITemplateProxyServlet extends ProxyServlet {
     servletRequest.setAttribute(ATTR_QUERY_STRING, newQueryBuf.toString());
 
     super.service(servletRequest, servletResponse);
+  }
+
+  private LinkedHashMap<String, String> resolveTemplateVariables(HttpServletRequest servletRequest) throws ServletException {
+    LinkedHashMap<String, String> variables = new LinkedHashMap();
+    LinkedHashMap<String, String> variablesFromQueryString = getVariablesFromQueryString(servletRequest);
+    LinkedHashMap<String, String> variablesFromRequestHeaders = getVariablesFromRequestHeaders(servletRequest);
+    variables.putAll(variablesFromRequestHeaders);
+    variables.putAll(variablesFromQueryString);
+    return variables;
+  }
+
+  private LinkedHashMap<String, String> getVariablesFromRequestHeaders(HttpServletRequest servletRequest) {
+
+    LinkedHashMap specialHeaders = new LinkedHashMap();
+    Enumeration headerNames = servletRequest.getHeaderNames();
+    while(headerNames.hasMoreElements()) {
+      String headerName = (String)headerNames.nextElement();
+      if (headerName.startsWith("__"))
+        specialHeaders.put(headerName, servletRequest.getHeader(headerName));
+    }
+    return specialHeaders;
+  }
+
+  private LinkedHashMap<String, String> getVariablesFromQueryString(HttpServletRequest servletRequest) throws ServletException {
+    //First collect params
+    /*
+     * Do not use servletRequest.getParameter(arg) because that will
+     * typically read and consume the servlet InputStream (where our
+     * form data is stored for POST). We need the InputStream later on.
+     * So we'll parse the query string ourselves. A side benefit is
+     * we can keep the proxy parameters in the query string and not
+     * have to add them to a URL encoded form attachment.
+     */
+    String queryString = "?" + servletRequest.getQueryString();//no "?" but might have "#"
+    int hash = queryString.indexOf('#');
+    if (hash >= 0) {
+      queryString = queryString.substring(0, hash);
+    }
+    List<NameValuePair> pairs;
+    try {
+      //note: HttpClient 4.2 lets you parse the string without building the URI
+      pairs = URLEncodedUtils.parse(new URI(queryString), null);
+    } catch (URISyntaxException e) {
+      throw new ServletException("Unexpected URI parsing error on " + queryString, e);
+    }
+
+    LinkedHashMap<String, String> params = new LinkedHashMap<String, String>();
+    for (NameValuePair pair : pairs) {
+      params.put(pair.getName(), pair.getValue());
+    }
+    return params;
+
   }
 
   @Override
