@@ -169,7 +169,7 @@ public class ProxyServlet extends HttpServlet {
     targetHost = URIUtils.extractHost(targetUriObj);
   }
 
-  private Properties getTargetUriProperties() {
+  protected Properties getTargetUriProperties() {
     Properties proxyProperties = new Properties();
     try {
       InputStream proxyPropertiesResource = Thread.currentThread().getContextClassLoader().getResourceAsStream("http-proxy.properties");

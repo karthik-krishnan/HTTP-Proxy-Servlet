@@ -14,6 +14,8 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static java.lang.String.format;
+
 /**
  * A proxy servlet in which the target URI is templated from incoming request parameters. The
  * format adheres to the <a href="http://tools.ietf.org/html/rfc6570">URI Template RFC</a>, "Level
@@ -40,12 +42,22 @@ public class URITemplateProxyServlet extends ProxyServlet {
           URITemplateProxyServlet.class.getSimpleName() + ".queryString";
 
   protected String targetUriTemplate;//has {name} parts
+  protected String targetUriTemplateProperty;
 
   @Override
   protected void initTarget() throws ServletException {
+    Properties proxyProperties = getTargetUriProperties();
     targetUriTemplate = getConfigParam(P_TARGET_URI);
+    targetUriTemplateProperty = getConfigParam(P_TARGET_URI_PROPERTY);
+    if (targetUriTemplate == null && targetUriTemplateProperty == null)
+      throw new ServletException(format("%s or %s is required", P_TARGET_URI, P_TARGET_URI_PROPERTY));
+    if(targetUriTemplateProperty != null) {
+      targetUriTemplate = proxyProperties.getProperty(targetUriTemplateProperty);
+      if(targetUriTemplate == null)
+        targetUriTemplate = System.getProperty(targetUriTemplateProperty);
+    }
     if (targetUriTemplate == null)
-      throw new ServletException(P_TARGET_URI+" is required.");
+      throw new ServletException(P_TARGET_URI + " is required.");
 
     //leave this.target* null to prevent accidental mis-use
   }

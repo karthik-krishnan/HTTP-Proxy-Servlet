@@ -255,11 +255,11 @@ public class ProxyServletTest
     return new URI(this.targetBaseUri).getPath() + expectedUri;
   }
 
-  private GetMethodWebRequest makeGetMethodRequest(final String url) {
+  protected GetMethodWebRequest makeGetMethodRequest(final String url) {
     return makeMethodRequest(url,GetMethodWebRequest.class);
   }
 
-  private PostMethodWebRequest makePostMethodRequest(final String url) {
+  protected PostMethodWebRequest makePostMethodRequest(final String url) {
     return makeMethodRequest(url,PostMethodWebRequest.class);
   }
 

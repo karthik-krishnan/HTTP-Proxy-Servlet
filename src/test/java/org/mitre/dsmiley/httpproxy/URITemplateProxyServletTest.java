@@ -1,5 +1,7 @@
 package org.mitre.dsmiley.httpproxy;
 
+import com.meterware.httpunit.GetMethodWebRequest;
+import com.meterware.httpunit.PostMethodWebRequest;
 import com.meterware.httpunit.WebRequest;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -29,9 +31,11 @@ public class URITemplateProxyServletTest extends ProxyServletTest {
     String hostParam = "localhost";
     String portParam = String.valueOf(localTestServer.getServiceAddress().getPort());
     String pathParam = "targetPath";
-    urlParams = "_host=" + hostParam + "&_port=" + portParam + "&_path=" + pathParam;
-    targetBaseUri = "http://" + hostParam + ":" + portParam + "/" + pathParam;
-    servletProps.setProperty("targetUri", "http://{_host}:{_port}/{_path}");//template
+    String userParam = "user1";
+    String tenantParam = "tenant1";
+    urlParams = "_host=" + hostParam + "&_port=" + portParam + "&_path=" + pathParam + "&__user=" + userParam;
+    targetBaseUri = "http://" + hostParam + ":" + portParam + "/" + pathParam + "/" + userParam + "/" + tenantParam;
+    servletProps.setProperty("targetUri", "http://{_host}:{_port}/{_path}/{__user}/{__tenant}");//template
     servletRunner.registerServlet("/proxyParameterized/*", URITemplateProxyServlet.class.getName(), servletProps);
     sourceBaseUri = "http://localhost/proxyParameterized";//localhost:0 is hard-coded in ServletUnitHttpRequest
   }
@@ -64,4 +68,21 @@ public class URITemplateProxyServletTest extends ProxyServletTest {
   @Ignore //because HttpUnit is faulty
   public void testSendFile() throws Exception {
   }
+
+  @Override
+  protected GetMethodWebRequest makeGetMethodRequest(final String url) {
+    GetMethodWebRequest getMethodWebRequest = super.makeGetMethodRequest(url);
+    getMethodWebRequest.setHeaderField("__tenant", "tenant1");
+    getMethodWebRequest.setHeaderField("__user", "user2"); //query param overrides header param
+    return getMethodWebRequest;
+  }
+
+  @Override
+  protected PostMethodWebRequest makePostMethodRequest(final String url) {
+    PostMethodWebRequest postMethodWebRequest = super.makePostMethodRequest(url);
+    postMethodWebRequest.setHeaderField("__tenant", "tenant1");
+    postMethodWebRequest.setHeaderField("__user", "user2"); //query param overrides header param
+    return postMethodWebRequest;
+  }
+
 }
