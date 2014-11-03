@@ -65,16 +65,20 @@ public class URITemplateProxyServlet extends ProxyServlet {
   @Override
   protected void service(HttpServletRequest servletRequest, HttpServletResponse servletResponse)
           throws ServletException, IOException {
-    LinkedHashMap<String, String> params = resolveTemplateVariables(servletRequest);
+
+    LinkedHashMap<String, String> variablesFromQueryString = getVariablesFromQueryString(servletRequest);
+    LinkedHashMap<String, String> variablesFromRequestHeaders = getVariablesFromRequestHeaders(servletRequest);
 
     //Now rewrite the URL
     StringBuffer urlBuf = new StringBuffer();//note: StringBuilder isn't supported by Matcher
     Matcher matcher = TEMPLATE_PATTERN.matcher(targetUriTemplate);
     while (matcher.find()) {
       String arg = matcher.group(1);
-      String replacement = params.remove(arg);//note we remove
+      String replacement = variablesFromQueryString.remove(arg);//note we remove
       if (replacement == null) {
-        throw new ServletException("Missing HTTP parameter "+arg+" to fill the template");
+        replacement = variablesFromRequestHeaders.remove(arg);
+      if (replacement == null)
+        throw new ServletException("Missing HTTP parameter " + arg + " to fill the template");
       }
       matcher.appendReplacement(urlBuf, replacement);
     }
@@ -91,7 +95,7 @@ public class URITemplateProxyServlet extends ProxyServlet {
 
     //Determine the new query string based on removing the used names
     StringBuilder newQueryBuf = new StringBuilder(servletRequest.getQueryString().length());
-    for (Map.Entry<String, String> nameVal : params.entrySet()) {
+    for (Map.Entry<String, String> nameVal : variablesFromQueryString.entrySet()) {
       if (newQueryBuf.length() > 0)
         newQueryBuf.append('&');
       newQueryBuf.append(nameVal.getKey()).append('=');
@@ -103,23 +107,13 @@ public class URITemplateProxyServlet extends ProxyServlet {
     super.service(servletRequest, servletResponse);
   }
 
-  private LinkedHashMap<String, String> resolveTemplateVariables(HttpServletRequest servletRequest) throws ServletException {
-    LinkedHashMap<String, String> variables = new LinkedHashMap();
-    LinkedHashMap<String, String> variablesFromQueryString = getVariablesFromQueryString(servletRequest);
-    LinkedHashMap<String, String> variablesFromRequestHeaders = getVariablesFromRequestHeaders(servletRequest);
-    variables.putAll(variablesFromRequestHeaders);
-    variables.putAll(variablesFromQueryString);
-    return variables;
-  }
-
   private LinkedHashMap<String, String> getVariablesFromRequestHeaders(HttpServletRequest servletRequest) {
 
     LinkedHashMap specialHeaders = new LinkedHashMap();
     Enumeration headerNames = servletRequest.getHeaderNames();
     while(headerNames.hasMoreElements()) {
       String headerName = (String)headerNames.nextElement();
-      if (headerName.startsWith("__"))
-        specialHeaders.put(headerName, servletRequest.getHeader(headerName));
+      specialHeaders.put(headerName, servletRequest.getHeader(headerName));
     }
     return specialHeaders;
   }

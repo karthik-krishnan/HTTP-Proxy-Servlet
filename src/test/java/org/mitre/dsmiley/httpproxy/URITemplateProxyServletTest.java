@@ -35,7 +35,7 @@ public class URITemplateProxyServletTest extends ProxyServletTest {
     String tenantParam = "tenant1";
     urlParams = "_host=" + hostParam + "&_port=" + portParam + "&_path=" + pathParam + "&__user=" + userParam;
     targetBaseUri = "http://" + hostParam + ":" + portParam + "/" + pathParam + "/" + userParam + "/" + tenantParam;
-    servletProps.setProperty("targetUri", "http://{_host}:{_port}/{_path}/{__user}/{__tenant}");//template
+    servletProps.setProperty("targetUri", "http://{_host}:{_port}/{_path}/{__user}/{_tenant}");//template
     servletRunner.registerServlet("/proxyParameterized/*", URITemplateProxyServlet.class.getName(), servletProps);
     sourceBaseUri = "http://localhost/proxyParameterized";//localhost:0 is hard-coded in ServletUnitHttpRequest
   }
@@ -72,7 +72,7 @@ public class URITemplateProxyServletTest extends ProxyServletTest {
   @Override
   protected GetMethodWebRequest makeGetMethodRequest(final String url) {
     GetMethodWebRequest getMethodWebRequest = super.makeGetMethodRequest(url);
-    getMethodWebRequest.setHeaderField("__tenant", "tenant1");
+    getMethodWebRequest.setHeaderField("_tenant", "tenant1");
     getMethodWebRequest.setHeaderField("__user", "user2"); //query param overrides header param
     return getMethodWebRequest;
   }
@@ -80,7 +80,7 @@ public class URITemplateProxyServletTest extends ProxyServletTest {
   @Override
   protected PostMethodWebRequest makePostMethodRequest(final String url) {
     PostMethodWebRequest postMethodWebRequest = super.makePostMethodRequest(url);
-    postMethodWebRequest.setHeaderField("__tenant", "tenant1");
+    postMethodWebRequest.setHeaderField("_tenant", "tenant1");
     postMethodWebRequest.setHeaderField("__user", "user2"); //query param overrides header param
     return postMethodWebRequest;
   }
