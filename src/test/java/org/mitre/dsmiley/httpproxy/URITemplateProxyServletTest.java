@@ -31,11 +31,11 @@ public class URITemplateProxyServletTest extends ProxyServletTest {
     String hostParam = "localhost";
     String portParam = String.valueOf(localTestServer.getServiceAddress().getPort());
     String pathParam = "targetPath";
-    String userParam = "user1";
+    String userParam = "user2";
     String tenantParam = "tenant1";
-    urlParams = "_host=" + hostParam + "&_port=" + portParam + "&_path=" + pathParam + "&__user=" + userParam;
+    urlParams = "_host=" + hostParam + "&_port=" + portParam + "&_path=" + pathParam + "&_user=" + userParam;
     targetBaseUri = "http://" + hostParam + ":" + portParam + "/" + pathParam + "/" + userParam + "/" + tenantParam;
-    servletProps.setProperty("targetUri", "http://{_host}:{_port}/{_path}/{__user}/{_tenant}");//template
+    servletProps.setProperty("targetUri", "http://{_host}:{_port}/{_path}/{_user}/{_tenant}");//template
     servletRunner.registerServlet("/proxyParameterized/*", URITemplateProxyServlet.class.getName(), servletProps);
     sourceBaseUri = "http://localhost/proxyParameterized";//localhost:0 is hard-coded in ServletUnitHttpRequest
   }
@@ -73,7 +73,7 @@ public class URITemplateProxyServletTest extends ProxyServletTest {
   protected GetMethodWebRequest makeGetMethodRequest(final String url) {
     GetMethodWebRequest getMethodWebRequest = super.makeGetMethodRequest(url);
     getMethodWebRequest.setHeaderField("_tenant", "tenant1");
-    getMethodWebRequest.setHeaderField("__user", "user2"); //query param overrides header param
+    getMethodWebRequest.setHeaderField("_user", "user2"); //header param overrides query param
     return getMethodWebRequest;
   }
 
@@ -81,7 +81,7 @@ public class URITemplateProxyServletTest extends ProxyServletTest {
   protected PostMethodWebRequest makePostMethodRequest(final String url) {
     PostMethodWebRequest postMethodWebRequest = super.makePostMethodRequest(url);
     postMethodWebRequest.setHeaderField("_tenant", "tenant1");
-    postMethodWebRequest.setHeaderField("__user", "user2"); //query param overrides header param
+    postMethodWebRequest.setHeaderField("_user", "user2"); //header param overrides query param
     return postMethodWebRequest;
   }
 

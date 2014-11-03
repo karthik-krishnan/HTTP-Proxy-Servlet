@@ -412,7 +412,7 @@ public class ProxyServlet extends HttpServlet {
   /** Copy request headers from the servlet client to the proxy request. */
   protected void copyRequestHeaders(HttpServletRequest servletRequest, HttpRequest proxyRequest) {
     // Get an Enumeration of all of the header names sent by the client
-    Enumeration enumerationOfHeaderNames = servletRequest.getHeaderNames();
+    Enumeration enumerationOfHeaderNames = getHeadersToCopy(servletRequest);
     while (enumerationOfHeaderNames.hasMoreElements()) {
       String headerName = (String) enumerationOfHeaderNames.nextElement();
       //Instead the content-length is effectively set via InputStreamEntity
@@ -506,6 +506,10 @@ public class ProxyServlet extends HttpServlet {
 
   protected String rewriteQueryStringFromRequest(HttpServletRequest servletRequest, String queryString) {
     return queryString;
+  }
+
+  protected Enumeration getHeadersToCopy(HttpServletRequest servletRequest) {
+    return servletRequest.getHeaderNames();
   }
 
   /** For a redirect response from the target server, this translates {@code theUrl} to redirect to

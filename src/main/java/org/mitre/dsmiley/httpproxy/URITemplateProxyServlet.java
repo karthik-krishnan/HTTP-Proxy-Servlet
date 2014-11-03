@@ -40,6 +40,8 @@ public class URITemplateProxyServlet extends ProxyServlet {
   protected static final Pattern TEMPLATE_PATTERN = Pattern.compile("\\{([a-zA-Z0-9-_%.]+)\\}");
   private static final String ATTR_QUERY_STRING =
           URITemplateProxyServlet.class.getSimpleName() + ".queryString";
+  private static final String ATTR_REQUEST_HEADERS =
+          URITemplateProxyServlet.class.getSimpleName() + ".requestHeaders";
 
   protected String targetUriTemplate;//has {name} parts
   protected String targetUriTemplateProperty;
@@ -75,9 +77,10 @@ public class URITemplateProxyServlet extends ProxyServlet {
     while (matcher.find()) {
       String arg = matcher.group(1);
       String replacement = variablesFromQueryString.remove(arg);//note we remove
-      if (replacement == null) {
+      if (variablesFromRequestHeaders.containsKey(arg))
         replacement = variablesFromRequestHeaders.remove(arg);
-      if (replacement == null)
+
+      if (replacement == null) {
         throw new ServletException("Missing HTTP parameter " + arg + " to fill the template");
       }
       matcher.appendReplacement(urlBuf, replacement);
@@ -103,6 +106,7 @@ public class URITemplateProxyServlet extends ProxyServlet {
         newQueryBuf.append(nameVal.getValue());
     }
     servletRequest.setAttribute(ATTR_QUERY_STRING, newQueryBuf.toString());
+    servletRequest.setAttribute(ATTR_REQUEST_HEADERS, variablesFromRequestHeaders.keySet());
 
     super.service(servletRequest, servletResponse);
   }
@@ -128,7 +132,7 @@ public class URITemplateProxyServlet extends ProxyServlet {
      * we can keep the proxy parameters in the query string and not
      * have to add them to a URL encoded form attachment.
      */
-    String queryString = "?" + servletRequest.getQueryString();//no "?" but might have "#"
+    String queryString = servletRequest.getQueryString() != null ? "?" + servletRequest.getQueryString() : "";//no "?" but might have "#"
     int hash = queryString.indexOf('#');
     if (hash >= 0) {
       queryString = queryString.substring(0, hash);
@@ -153,4 +157,10 @@ public class URITemplateProxyServlet extends ProxyServlet {
   protected String rewriteQueryStringFromRequest(HttpServletRequest servletRequest, String queryString) {
     return (String) servletRequest.getAttribute(ATTR_QUERY_STRING);
   }
+
+  @Override
+  protected Enumeration getHeadersToCopy(HttpServletRequest servletRequest) {
+    return Collections.enumeration((Set)servletRequest.getAttribute(ATTR_REQUEST_HEADERS));
+  }
+
 }
