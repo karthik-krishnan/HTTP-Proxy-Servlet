@@ -94,7 +94,7 @@ public class URITemplateProxyServlet extends ProxyServlet {
     servletRequest.setAttribute(ATTR_TARGET_HOST, URIUtils.extractHost(targetUriObj));
 
     //Determine the new query string based on removing the used names
-    StringBuilder newQueryBuf = new StringBuilder(servletRequest.getQueryString().length());
+    StringBuilder newQueryBuf = new StringBuilder(128);
     for (Map.Entry<String, String> nameVal : variablesFromQueryString.entrySet()) {
       if (newQueryBuf.length() > 0)
         newQueryBuf.append('&');
