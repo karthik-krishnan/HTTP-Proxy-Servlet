@@ -37,7 +37,7 @@ public class URITemplateProxyServlet extends ProxyServlet {
  * But that's not how the spec works. So for now we will require a proxy arg to be present
  * if defined for this proxy URL.
  */
-  protected static final Pattern TEMPLATE_PATTERN = Pattern.compile("\\{([a-zA-Z0-9_%.]+)\\}");
+  protected static final Pattern TEMPLATE_PATTERN = Pattern.compile("\\{([a-zA-Z0-9-_%.]+)\\}");
   private static final String ATTR_QUERY_STRING =
           URITemplateProxyServlet.class.getSimpleName() + ".queryString";
 
