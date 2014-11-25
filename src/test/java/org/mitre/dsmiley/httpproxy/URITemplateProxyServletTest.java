@@ -77,6 +77,11 @@ public class URITemplateProxyServletTest extends ProxyServletTest {
     return getMethodWebRequest;
   }
 
+  @Test
+  public void shouldReplaceVariablesFromSourceURL() throws Exception {
+
+  }
+
   @Override
   protected PostMethodWebRequest makePostMethodRequest(final String url) {
     PostMethodWebRequest postMethodWebRequest = super.makePostMethodRequest(url);

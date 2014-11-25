@@ -87,6 +87,8 @@ public class ProxyServlet extends HttpServlet {
           ProxyServlet.class.getSimpleName() + ".targetUri";
   protected static final String ATTR_TARGET_HOST =
           ProxyServlet.class.getSimpleName() + ".targetHost";
+  protected static final String ATTR_TARGET_PATH =
+          ProxyServlet.class.getSimpleName() + ".targetPath";;
 
   /* MISC */
 
@@ -117,6 +119,10 @@ public class ProxyServlet extends HttpServlet {
 
   private HttpHost getTargetHost(HttpServletRequest servletRequest) {
     return (HttpHost) servletRequest.getAttribute(ATTR_TARGET_HOST);
+  }
+
+  protected String getTargetPath(HttpServletRequest servletRequest) {
+    return (String) servletRequest.getAttribute(ATTR_TARGET_PATH);
   }
 
   /**
@@ -269,6 +275,9 @@ public class ProxyServlet extends HttpServlet {
     }
     if (servletRequest.getAttribute(ATTR_TARGET_HOST) == null) {
       servletRequest.setAttribute(ATTR_TARGET_HOST, targetHost);
+    }
+    if(servletRequest.getAttribute(ATTR_TARGET_PATH) == null) {
+      servletRequest.setAttribute(ATTR_TARGET_PATH, servletRequest.getPathInfo());
     }
 
     // Make the Request
@@ -477,7 +486,7 @@ public class ProxyServlet extends HttpServlet {
     uri.append(getTargetUri(servletRequest));
     // Handle the path given to the servlet
     if (servletRequest.getPathInfo() != null) {//ex: /my/path.html
-      uri.append(encodeUriQuery(servletRequest.getPathInfo()));
+      uri.append(encodeUriQuery(getTargetPath(servletRequest)));
     }
     // Handle the query string & fragment
     String queryString = servletRequest.getQueryString();//ex:(following '?'): name=value&foo=bar#fragment

@@ -37,7 +37,7 @@ public class URITemplateProxyServlet extends ProxyServlet {
  * But that's not how the spec works. So for now we will require a proxy arg to be present
  * if defined for this proxy URL.
  */
-  protected static final Pattern TEMPLATE_PATTERN = Pattern.compile("\\{([a-zA-Z0-9-_%.]+)\\}");
+  protected static final Pattern TEMPLATE_PATTERN = Pattern.compile("(\\{([a-zA-Z0-9-_%.]+)\\})");
   private static final String ATTR_QUERY_STRING =
           URITemplateProxyServlet.class.getSimpleName() + ".queryString";
   private static final String ATTR_REQUEST_HEADERS =
@@ -70,24 +70,20 @@ public class URITemplateProxyServlet extends ProxyServlet {
 
     LinkedHashMap<String, String> variablesFromQueryString = getVariablesFromQueryString(servletRequest);
     LinkedHashMap<String, String> variablesFromRequestHeaders = getVariablesFromRequestHeaders(servletRequest);
+    List<String> replacedQueryStringKeys = new ArrayList<String>();
+    List<String> replacedHeaderKeys = new ArrayList<String>();
 
     //Now rewrite the URL
-    StringBuffer urlBuf = new StringBuffer();//note: StringBuilder isn't supported by Matcher
-    Matcher matcher = TEMPLATE_PATTERN.matcher(targetUriTemplate);
-    while (matcher.find()) {
-      String arg = matcher.group(1);
-      String replacement = variablesFromQueryString.remove(arg);//note we remove
-      if (variablesFromRequestHeaders.containsKey(arg))
-        replacement = variablesFromRequestHeaders.remove(arg);
+    StringBuffer urlBuf = getStringBuffer(targetUriTemplate, variablesFromQueryString, variablesFromRequestHeaders, replacedQueryStringKeys, replacedHeaderKeys);
 
-      if (replacement == null) {
-        throw new ServletException("Missing HTTP parameter " + arg + " to fill the template");
-      }
-      matcher.appendReplacement(urlBuf, replacement);
-    }
-    matcher.appendTail(urlBuf);
+    String pathInfo = (servletRequest.getPathInfo() != null ? servletRequest.getPathInfo() : "");
+    StringBuffer replacedPathInfo = getStringBuffer(pathInfo, variablesFromQueryString, variablesFromRequestHeaders, replacedQueryStringKeys, replacedHeaderKeys);
+
     String newTargetUri = urlBuf.toString();
+    
     servletRequest.setAttribute(ATTR_TARGET_URI, newTargetUri);
+    servletRequest.setAttribute(ATTR_TARGET_PATH, replacedPathInfo.toString());
+
     URI targetUriObj;
     try {
       targetUriObj = new URI(newTargetUri);
@@ -95,6 +91,9 @@ public class URITemplateProxyServlet extends ProxyServlet {
       throw new ServletException("Rewritten targetUri is invalid: " + newTargetUri,e);
     }
     servletRequest.setAttribute(ATTR_TARGET_HOST, URIUtils.extractHost(targetUriObj));
+
+    for (String key : replacedQueryStringKeys) {variablesFromQueryString.remove(key);}
+    for (String key : replacedHeaderKeys) {variablesFromRequestHeaders.remove(key);}
 
     //Determine the new query string based on removing the used names
     StringBuilder newQueryBuf = new StringBuilder(128);
@@ -109,6 +108,49 @@ public class URITemplateProxyServlet extends ProxyServlet {
     servletRequest.setAttribute(ATTR_REQUEST_HEADERS, variablesFromRequestHeaders.keySet());
 
     super.service(servletRequest, servletResponse);
+  }
+
+  private StringBuffer getStringBuffer(String sourceString, LinkedHashMap<String, String> variablesFromQueryString, LinkedHashMap<String, String> variablesFromRequestHeaders, List<String> replacedQueryStringKeys, List<String> replacedHeaderKeys) {
+    StringBuffer urlBuf = new StringBuffer();//note: StringBuilder isn't supported by Matcher
+    Matcher matcher = TEMPLATE_PATTERN.matcher(sourceString);
+    while (matcher.find()) {
+      String arg = matcher.group(2);
+      String replacement = variablesFromQueryString.get(arg);//note we remove
+      replacedQueryStringKeys.add(arg);
+      if (variablesFromRequestHeaders.containsKey(arg)) {
+        replacement = variablesFromRequestHeaders.get(arg);
+        replacedHeaderKeys.add(arg);
+      }
+      if (replacement == null) {
+        //for now stub the exception, lets simply keep the variable as it is.
+        replacement = matcher.group(1);
+        //throw new ServletException("Missing HTTP parameter " + arg + " to fill the template");
+      }
+      matcher.appendReplacement(urlBuf, replacement);
+    }
+    matcher.appendTail(urlBuf);
+    return urlBuf;
+  }
+
+  private StringBuffer replaceVariables(String sourceString, LinkedHashMap<String, String> variablesFromQueryString, LinkedHashMap<String, String> variablesFromRequestHeaders) throws ServletException {
+    //Now rewrite the URL
+    StringBuffer urlBuf = new StringBuffer();//note: StringBuilder isn't supported by Matcher
+    Matcher matcher = TEMPLATE_PATTERN.matcher(sourceString);
+    while (matcher.find()) {
+      String arg = matcher.group(2);
+      String replacement = variablesFromQueryString.remove(arg);//note we remove
+      if (variablesFromRequestHeaders.containsKey(arg))
+        replacement = variablesFromRequestHeaders.remove(arg);
+
+      if (replacement == null) {
+        //for now stub the exception, lets simply keep the variable as it is.
+        replacement = matcher.group(1);
+        //throw new ServletException("Missing HTTP parameter " + arg + " to fill the template");
+      }
+      matcher.appendReplacement(urlBuf, replacement);
+    }
+    matcher.appendTail(urlBuf);
+    return urlBuf;
   }
 
   private LinkedHashMap<String, String> getVariablesFromRequestHeaders(HttpServletRequest servletRequest) {
