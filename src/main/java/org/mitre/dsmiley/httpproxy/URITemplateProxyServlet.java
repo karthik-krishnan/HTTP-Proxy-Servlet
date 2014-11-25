@@ -80,7 +80,7 @@ public class URITemplateProxyServlet extends ProxyServlet {
     StringBuffer replacedPathInfo = getStringBuffer(pathInfo, variablesFromQueryString, variablesFromRequestHeaders, replacedQueryStringKeys, replacedHeaderKeys);
 
     String newTargetUri = urlBuf.toString();
-    
+
     servletRequest.setAttribute(ATTR_TARGET_URI, newTargetUri);
     servletRequest.setAttribute(ATTR_TARGET_PATH, replacedPathInfo.toString());
 
