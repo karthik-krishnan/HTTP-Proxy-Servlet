@@ -74,10 +74,10 @@ public class URITemplateProxyServlet extends ProxyServlet {
     List<String> replacedHeaderKeys = new ArrayList<String>();
 
     //Now rewrite the URL
-    StringBuffer urlBuf = getStringBuffer(targetUriTemplate, variablesFromQueryString, variablesFromRequestHeaders, replacedQueryStringKeys, replacedHeaderKeys);
+    StringBuffer urlBuf = replaceVariables(targetUriTemplate, variablesFromQueryString, variablesFromRequestHeaders, replacedQueryStringKeys, replacedHeaderKeys);
 
     String pathInfo = (servletRequest.getPathInfo() != null ? servletRequest.getPathInfo() : "");
-    StringBuffer replacedPathInfo = getStringBuffer(pathInfo, variablesFromQueryString, variablesFromRequestHeaders, replacedQueryStringKeys, replacedHeaderKeys);
+    StringBuffer replacedPathInfo = replaceVariables(pathInfo, variablesFromQueryString, variablesFromRequestHeaders, replacedQueryStringKeys, replacedHeaderKeys);
 
     String newTargetUri = urlBuf.toString();
 
@@ -110,7 +110,7 @@ public class URITemplateProxyServlet extends ProxyServlet {
     super.service(servletRequest, servletResponse);
   }
 
-  private StringBuffer getStringBuffer(String sourceString, LinkedHashMap<String, String> variablesFromQueryString, LinkedHashMap<String, String> variablesFromRequestHeaders, List<String> replacedQueryStringKeys, List<String> replacedHeaderKeys) {
+  private StringBuffer replaceVariables(String sourceString, LinkedHashMap<String, String> variablesFromQueryString, LinkedHashMap<String, String> variablesFromRequestHeaders, List<String> replacedQueryStringKeys, List<String> replacedHeaderKeys) {
     StringBuffer urlBuf = new StringBuffer();//note: StringBuilder isn't supported by Matcher
     Matcher matcher = TEMPLATE_PATTERN.matcher(sourceString);
     while (matcher.find()) {
