@@ -3,13 +3,19 @@ package org.mitre.dsmiley.httpproxy;
 import com.meterware.httpunit.GetMethodWebRequest;
 import com.meterware.httpunit.PostMethodWebRequest;
 import com.meterware.httpunit.WebRequest;
+import com.meterware.httpunit.WebResponse;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
+
+import static org.junit.Assert.assertThat;
+import static org.junit.internal.matchers.StringContains.containsString;
 
 public class URITemplateProxyServletTest extends ProxyServletTest {
 
@@ -75,6 +81,14 @@ public class URITemplateProxyServletTest extends ProxyServletTest {
     getMethodWebRequest.setHeaderField("_tenant", "tenant1");
     getMethodWebRequest.setHeaderField("_user", "user2"); //header param overrides query param
     return getMethodWebRequest;
+  }
+
+  @Test
+  public void shouldRetainArrayParmeterInQueryString() throws Exception {
+    GetMethodWebRequest request = makeGetMethodRequest(String.format("%s?array=item_1&array=item_2", sourceBaseUri));
+    String expectedTargetUri = getExpectedTargetUri(request, "?array=item_1&array=item_2");
+    WebResponse response = servletRunner.getResponse(request);
+    assertThat(response.getText(), containsString(expectedTargetUri));
   }
 
   @Test

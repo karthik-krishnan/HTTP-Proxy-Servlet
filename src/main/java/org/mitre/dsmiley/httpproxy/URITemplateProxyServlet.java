@@ -68,7 +68,7 @@ public class URITemplateProxyServlet extends ProxyServlet {
   protected void service(HttpServletRequest servletRequest, HttpServletResponse servletResponse)
           throws ServletException, IOException {
 
-    LinkedHashMap<String, String> variablesFromQueryString = getVariablesFromQueryString(servletRequest);
+    List<NameValuePair> variablesFromQueryString = getVariablesFromQueryString(servletRequest);
     LinkedHashMap<String, String> variablesFromRequestHeaders = getVariablesFromRequestHeaders(servletRequest);
     List<String> replacedQueryStringKeys = new ArrayList<String>();
     List<String> replacedHeaderKeys = new ArrayList<String>();
@@ -92,15 +92,18 @@ public class URITemplateProxyServlet extends ProxyServlet {
     }
     servletRequest.setAttribute(ATTR_TARGET_HOST, URIUtils.extractHost(targetUriObj));
 
-    for (String key : replacedQueryStringKeys) {variablesFromQueryString.remove(key);}
     for (String key : replacedHeaderKeys) {variablesFromRequestHeaders.remove(key);}
 
     //Determine the new query string based on removing the used names
     StringBuilder newQueryBuf = new StringBuilder(128);
-    for (Map.Entry<String, String> nameVal : variablesFromQueryString.entrySet()) {
+    for (NameValuePair nameVal : variablesFromQueryString) {
+      //Ignore replaced query parameters
+      if(replacedQueryStringKeys.contains(nameVal.getName())) {
+        continue;
+      }
       if (newQueryBuf.length() > 0)
         newQueryBuf.append('&');
-      newQueryBuf.append(nameVal.getKey()).append('=');
+      newQueryBuf.append(nameVal.getName()).append('=');
       if (nameVal.getValue() != null)
         newQueryBuf.append(nameVal.getValue());
     }
@@ -110,12 +113,12 @@ public class URITemplateProxyServlet extends ProxyServlet {
     super.service(servletRequest, servletResponse);
   }
 
-  private StringBuffer replaceVariables(String sourceString, LinkedHashMap<String, String> variablesFromQueryString, LinkedHashMap<String, String> variablesFromRequestHeaders, List<String> replacedQueryStringKeys, List<String> replacedHeaderKeys) {
+  private StringBuffer replaceVariables(String sourceString, List<NameValuePair> variablesFromQueryString, LinkedHashMap<String, String> variablesFromRequestHeaders, List<String> replacedQueryStringKeys, List<String> replacedHeaderKeys) {
     StringBuffer urlBuf = new StringBuffer();//note: StringBuilder isn't supported by Matcher
     Matcher matcher = TEMPLATE_PATTERN.matcher(sourceString);
     while (matcher.find()) {
       String arg = matcher.group(2);
-      String replacement = variablesFromQueryString.get(arg);//note we remove
+      String replacement = getValueFor(variablesFromQueryString, arg);//note we remove
       replacedQueryStringKeys.add(arg);
       if (variablesFromRequestHeaders.containsKey(arg)) {
         replacement = variablesFromRequestHeaders.get(arg);
@@ -130,6 +133,15 @@ public class URITemplateProxyServlet extends ProxyServlet {
     }
     matcher.appendTail(urlBuf);
     return urlBuf;
+  }
+
+  private String getValueFor(List<NameValuePair> nameValuePairs, String name) {
+    for (NameValuePair nameValuePair: nameValuePairs) {
+      if(nameValuePair.getName().equals(name)) {
+        return nameValuePair.getValue();
+      }
+    }
+    return null;
   }
 
   private StringBuffer replaceVariables(String sourceString, LinkedHashMap<String, String> variablesFromQueryString, LinkedHashMap<String, String> variablesFromRequestHeaders) throws ServletException {
@@ -164,7 +176,7 @@ public class URITemplateProxyServlet extends ProxyServlet {
     return specialHeaders;
   }
 
-  private LinkedHashMap<String, String> getVariablesFromQueryString(HttpServletRequest servletRequest) throws ServletException {
+  private List<NameValuePair> getVariablesFromQueryString(HttpServletRequest servletRequest) throws ServletException {
     //First collect params
     /*
      * Do not use servletRequest.getParameter(arg) because that will
@@ -187,12 +199,7 @@ public class URITemplateProxyServlet extends ProxyServlet {
       throw new ServletException("Unexpected URI parsing error on " + queryString, e);
     }
 
-    LinkedHashMap<String, String> params = new LinkedHashMap<String, String>();
-    for (NameValuePair pair : pairs) {
-      params.put(pair.getName(), pair.getValue());
-    }
-    return params;
-
+    return pairs;
   }
 
   @Override
