@@ -412,7 +412,7 @@ public class ProxyServlet extends HttpServlet {
     hopByHopHeaders = new HeaderGroup();
     String[] headers = new String[] {
         "Connection", "Keep-Alive", "Proxy-Authenticate", "Proxy-Authorization",
-        "TE", "Trailers", "Transfer-Encoding", "Upgrade" };
+        "TE", "Trailers", "Transfer-Encoding", "Upgrade", "X-Forwarded-Proto" };
     for (String header : headers) {
       hopByHopHeaders.addHeader(new BasicHeader(header, null));
     }
