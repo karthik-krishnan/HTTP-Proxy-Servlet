@@ -35,6 +35,7 @@ import org.apache.http.message.BasicHttpEntityEnclosingRequest;
 import org.apache.http.message.BasicHttpRequest;
 import org.apache.http.message.HeaderGroup;
 import org.apache.http.params.BasicHttpParams;
+import org.apache.http.params.CoreConnectionPNames;
 import org.apache.http.params.HttpParams;
 import org.apache.http.util.EntityUtils;
 
@@ -48,12 +49,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.net.URI;
-import java.util.BitSet;
-import java.util.Enumeration;
-import java.util.Formatter;
-import java.util.Properties;
+import java.util.*;
 
 import static java.lang.String.format;
+import static java.util.Collections.list;
 
 /**
  * An HTTP reverse proxy/gateway servlet. It is designed to be extended for customization
@@ -107,6 +106,8 @@ public class ProxyServlet extends HttpServlet {
 
   private HttpClient proxyClient;
 
+  protected Properties configurationProperties = getConfigurationProperties();
+
   @Override
   public String getServletInfo() {
     return "A proxy servlet by David Smiley, dsmiley@apache.org";
@@ -130,7 +131,12 @@ public class ProxyServlet extends HttpServlet {
    * it can be overridden.
    */
   protected String getConfigParam(String key) {
-    return getServletConfig().getInitParameter(key);
+    if(list(getServletConfig().getInitParameterNames()).contains(key)) {
+      return getServletConfig().getInitParameter(key);
+    } else if(configurationProperties.containsKey(key)) {
+      return configurationProperties.getProperty(key);
+    }
+    return null;
   }
 
   @Override
@@ -148,19 +154,24 @@ public class ProxyServlet extends HttpServlet {
     initTarget();//sets target*
 
     HttpParams hcParams = new BasicHttpParams();
+    readConfigParam(hcParams, ClientPNames.ALLOW_CIRCULAR_REDIRECTS, Boolean.class);
+    readConfigParam(hcParams, ClientPNames.CONN_MANAGER_TIMEOUT, Integer.class);
     readConfigParam(hcParams, ClientPNames.HANDLE_REDIRECTS, Boolean.class);
-    hcParams.setBooleanParameter(ClientPNames.HANDLE_REDIRECTS, false);
+    readConfigParam(hcParams, ClientPNames.MAX_REDIRECTS, Integer.class);
+    readConfigParam(hcParams, CoreConnectionPNames.CONNECTION_TIMEOUT, Integer.class);
+    readConfigParam(hcParams, CoreConnectionPNames.SO_TIMEOUT, Integer.class);
+    readConfigParam(hcParams, CoreConnectionPNames.STALE_CONNECTION_CHECK, Boolean.class);
     proxyClient = createHttpClient(hcParams);
   }
 
   protected void initTarget() throws ServletException {
-    Properties proxyProperties = getTargetUriProperties();
+    Properties configurationProperties = getConfigurationProperties();
     targetUri = getConfigParam(P_TARGET_URI);
     targetUriProperty = getConfigParam(P_TARGET_URI_PROPERTY);
     if (targetUri == null && targetUriProperty == null)
       throw new ServletException(format("%s or %s is required", P_TARGET_URI, P_TARGET_URI_PROPERTY));
     if(targetUriProperty != null) {
-      targetUri = proxyProperties.getProperty(targetUriProperty);
+      targetUri = configurationProperties.getProperty(targetUriProperty);
       if(targetUri == null)
         targetUri = System.getProperty(targetUriProperty);
     }
@@ -176,12 +187,12 @@ public class ProxyServlet extends HttpServlet {
     targetHost = URIUtils.extractHost(targetUriObj);
   }
 
-  protected Properties getTargetUriProperties() {
-    Properties proxyProperties = new Properties();
+  protected Properties getConfigurationProperties() {
+    Properties configurationProperties = new Properties();
     try {
       InputStream proxyPropertiesResource = Thread.currentThread().getContextClassLoader().getResourceAsStream("http-proxy.properties");
       if (proxyPropertiesResource != null)
-        proxyProperties.load(proxyPropertiesResource);
+        configurationProperties.load(proxyPropertiesResource);
     } catch (IOException e) {
         //throw new ServletException("Unable to load http_proxy.properties " + e, e);
       //Assume targetUriProperty approach of resolving the targetUri is not used.
@@ -194,8 +205,8 @@ public class ProxyServlet extends HttpServlet {
     } catch (IOException e) {
       //Looks like there is no overrides, so dont shout!
     }
-    proxyProperties.putAll(proxyOverrideProperties);
-    return proxyProperties;
+    configurationProperties.putAll(proxyOverrideProperties);
+    return configurationProperties;
   }
 
   /** Called from {@link #init(javax.servlet.ServletConfig)}. HttpClient offers many opportunities

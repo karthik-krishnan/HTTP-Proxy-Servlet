@@ -48,13 +48,12 @@ public class URITemplateProxyServlet extends ProxyServlet {
 
   @Override
   protected void initTarget() throws ServletException {
-    Properties proxyProperties = getTargetUriProperties();
     targetUriTemplate = getConfigParam(P_TARGET_URI);
     targetUriTemplateProperty = getConfigParam(P_TARGET_URI_PROPERTY);
     if (targetUriTemplate == null && targetUriTemplateProperty == null)
       throw new ServletException(format("%s or %s is required", P_TARGET_URI, P_TARGET_URI_PROPERTY));
     if(targetUriTemplateProperty != null) {
-      targetUriTemplate = proxyProperties.getProperty(targetUriTemplateProperty);
+      targetUriTemplate = configurationProperties.getProperty(targetUriTemplateProperty);
       if(targetUriTemplate == null)
         targetUriTemplate = System.getProperty(targetUriTemplateProperty);
     }
